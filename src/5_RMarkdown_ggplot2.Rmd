@@ -1,0 +1,45 @@
+---
+title: "5_RMarkdown_ggplot2"
+author: "A.Abe"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(tidyverse)
+```
+
+## ggplot2を使った作図をR Markdownでレポートしてみる
+
+集計に用いたirisデータは次の通りである。
+
+```{r}
+head(iris)
+```
+
+### SpeciesごとのSepal.Lengthの散布図
+
+```{r}
+ggplot() +
+  geom_point(data = iris, mapping = aes(x = Species, y = Sepal.Length))
+```
+
+### Speciesごとの平均値を計算
+
+```{r, eval=TRUE, echo=FALSE}
+iris_avg <- iris %>% 
+  group_by(Species) %>% 
+  summarise(SepalLength_Avg = mean(Sepal.Length),
+            SepalWidth_Avg = mean(Sepal.Width),
+            PetalLength_Avg = mean(Petal.Length),
+            PetalWidth_Avg = mean(Petal.Width))
+iris_avg
+
+ggplot(data = iris_avg, mapping = aes(x = Species, y = SepalLength_Avg)) +
+  geom_bar(stat = "identity")
+
+```
+
