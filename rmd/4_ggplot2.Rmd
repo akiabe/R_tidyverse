@@ -1,0 +1,285 @@
+---
+title: "ggplot2"
+output: html_document
+---
+
+## 4-2. ggplot2による可視化
+
+```{r}
+library(tidyverse)
+```
+
+### エステティックマッピング
+
+マッピングするための変数をmapping = aes( )の引数に使用する。
+
+aes( )はエステティックを意味し、グラフの見栄えを決める総称を指す。
+
+```{r}
+head(mpg)
+```
+
+```{r}
+ggplot() +
+  geom_histogram(data = mpg, mapping = aes(x = displ))
+
+ggplot() +
+  geom_density(data = mpg, mapping = aes(x = displ))
+
+ggplot() +
+  geom_point(data = mpg, mapping = aes(x = displ, y = cty))
+```
+
+```{r}
+ggplot() +
+  geom_point(data = mpg, mapping = aes(x = displ, y = cty)) +
+  geom_smooth(data = mpg, mapping = aes(x = displ, y = cty), method = "lm")
+```
+
+上記のようにdata = mpg, mapping = aes(x = displ, y = cty)の部分が複数のレイヤで共通している。
+
+毎回書くのは面倒なので、以下のようにggplot( )内で指定することで前レイヤに継承させることができる。
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = cty)) +
+  geom_point() +
+  geom_smooth()
+```
+
+```{r}
+mpg1999 <- mpg %>% 
+  filter(year == 1999)
+
+mpg2008 <- mpg %>% 
+  filter(year == 2008)
+
+ggplot(mapping = aes(x = displ, y = cty)) +
+  geom_point(data = mpg1999) +
+  geom_point(data = mpg2008)
+
+```
+
+#### グループ化
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = cty, group = cty, colour = cyl)) +
+  geom_point()
+
+ggplot(data = mpg, mapping = aes(x = displ, y = cty, group = factor(cty), colour = factor(cyl))) +
+  geom_point()
+```
+
+グループ化し、近似直線を引くこともできる。
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = cty)) +
+  geom_point() +
+  geom_smooth(mapping = aes(group = factor(cyl), colour = factor(cyl)), method = "lm")
+
+ggplot(data = mpg, mapping = aes(x = displ, y = cty)) +
+  geom_point() +
+  geom_smooth(mapping = aes(group = factor(cyl)), method = "lm")
+```
+
+エステティックを色々変えてみる。
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = cty)) +
+  geom_point(mapping = aes(colour = factor(cyl), shape = factor(cyl)))
+
+ggplot(data = mpg, mapping = aes(x = displ, y = cty)) +
+  geom_point() +
+  geom_smooth(mapping = aes(colour = factor(year), linetype = factor(year)), method = "lm")
+```
+
+ある変数の水準ごとにエステティックを変更する場合はmapping = aes( )内でマッピングを行う。
+
+全水準に共通してエステティックを変更する場合は以下のようにmapping = aes( )外で設定を行う。
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = cty, colour = factor(cyl))) +
+  geom_point(shape = 17, size = 4, alpha = 0.4)
+
+ggplot(data = mpg, mapping = aes(x = displ, y = cty)) +
+  geom_point(colour = "chocolate", shape = 35, size = 10) +
+  geom_smooth(method = "lm", linetype = "dashed", se = FALSE)
+```
+
+グラフに情報を肉付けすることもできる。
+
+```{r}
+add_x <- c(2.5, 3, 3.5)
+add_y <- c(25, 27.5, 30)
+
+ggplot(data = mpg, mapping = aes(x = displ, y = cty)) +
+  geom_point() +
+  annotate(geom = "point", x = add_x, y = add_y, colour = "red") +
+  annotate(geom = "text", x = c(5, 5), y = c(30, 25), label = c("Check!", "annotate additional data"))
+```
+
+#### ファセット 
+
+ファセットという機能を使うことで、水準ごとに異なる描画パネルを作成することができる。
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = cty)) +
+  geom_point() +
+  facet_wrap(~ cyl)
+
+ggplot(data = mpg, mapping = aes(x = displ, y = cty)) +
+  geom_point() +
+  facet_grid(~ cyl)
+
+ggplot(data = mpg, mapping = aes(x = displ, y = cty)) +
+  geom_point() +
+  facet_grid(cyl ~ .)
+```
+
+2変数の場合は次のようになる。
+
+```{r}
+ggplot(data = mpg, mapping = aes(displ, y = cty)) +
+  geom_point() +
+  facet_wrap(year ~ cyl)
+
+ggplot(data = mpg, mapping = aes(displ, y = cty)) +
+  geom_point() +
+  facet_grid(year ~ cyl)
+```
+
+#### 統計的処理：stat
+
+dplyrパッケージのgroup_by( )とsummarise( )を組み合わせて平均を計算する。
+
+```{r}
+mean_cty <- mpg %>% 
+  group_by(class) %>% 
+  summarise(cty_m = mean(cty))
+
+ggplot(data = mean_cty, mapping = aes(x = class, y = cty_m)) +
+  geom_bar(stat = "identity")
+```
+
+ggplot2のgeom_bar( )、stat_summary( )を使ったもっと簡単な方法は次の通り
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = class, y = cty)) +
+  geom_bar(stat = "summary", fun = "mean")
+
+ggplot(data = mpg, mapping = aes(x = class, y = cty)) +
+  stat_summary(geom = "bar", fun = "mean")
+```
+
+平均と線分の上限と下限を描画する
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = class, y = cty)) +
+  stat_summary(geom = "pointrange", fun = "mean", fun.max = "max", fun.min = "min")
+```
+
+平均と標準誤差を描画する
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = class, y = cty)) +
+  stat_summary(geom = "bar", fun = "mean", fill = "grey") +
+  stat_summary(geom = "pointrange", fun.data = "mean_se")
+```
+
+#### X軸に離散変数をマッピングした場合の折れ線グラフ
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = factor(year), y = displ)) +
+  stat_summary(fun = "mean", geom = "line", group = 1)
+```
+
+#### 配置の指定：position
+
+geom_point( )で散布図のレイヤを重ねて表示する。X軸上の配置が忠実に守られているため、似た値のデータが重なって表示されており、一見するといくつかのデータが消えてしまっているように見える。
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = class, y = cty)) +
+  stat_summary(geom = "bar", fun = "mean") +
+  geom_point(mapping = aes(colour = class), show.legend = FALSE)
+```
+
+geom_violin( )でヴァイオリンプロットを表示すると、点の密集している位置がよく分かるようになる。
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = class, y = cty)) +
+  geom_violin(scale = "count") +
+  geom_point(mapping = aes(colour = class), show.legend = FALSE)
+```
+
+重なりを防ぎ、すべての点を表示させたい場合は、position = position_jitter( )を変更する。
+
+デフォルトの散らばりの設定の場合
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = class, y = cty)) +
+  stat_summary(geom = "bar", fun = "mean") +
+  geom_point(mapping = aes(colour = class),
+             position = position_jitter(),
+             show.legend = FALSE)
+```
+
+引数weigthを指定し、水平方向への散らばりを与えた場合(指定する数値は0.5未満が望ましい)
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = class, y = cty)) +
+  stat_summary(geom = "bar", fun = "mean") +
+  geom_point(mapping = aes(colour = class),
+             position = position_jitter(width = 0.2, height = 0, seed = 1234),
+             show.legend = FALSE)
+```
+
+#### 軸の調整
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = cty)) +
+  geom_point() +
+  geom_vline(xintercept = 4) +
+  geom_hline(yintercept = 15) +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+X軸、Y軸の特定の範囲を切り出す場合
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = cty)) +
+  geom_point() +
+  xlim(1.5, 4.5) +
+  ylim(10, 35) +
+  geom_vline(xintercept = 4) +
+  geom_hline(yintercept = 15) +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+X軸、Y軸の特定の範囲を拡大表示させたい場合
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = cty)) +
+  geom_point() +
+  coord_cartesian(xlim = c(1.5, 4.5), ylim = c(10, 35)) +
+  geom_vline(xintercept = 4) +
+  geom_hline(yintercept = 15) +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+#### その他
+
+themeを変更する場合
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = cty)) +
+  theme_bw() +
+  geom_point()
+```
+
+文字サイズやフォントを変更する場合
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = cty)) +
+  theme_classic(base_size = 30, base_family = "serif") +
+  geom_point()
+```
+
