@@ -103,3 +103,19 @@ d3 %>%
   group_by(site, cat) %>% 
   summarise(total_val = sum(val), .groups = "drop")
 
+# dayのfilterの条件を別テーブルから参照する場合
+table <- tibble(
+  site = c("A", "B", "C", "D"),
+  start = c("2021-09-01", "2021-10-01", "2021-11-01", "2021-12-01"),
+  end = c("2022-01-01", "2022-01-01", "2022-01-01", "2022-01-01")
+)
+
+table
+
+
+d3 %>% 
+  filter(site != "C" & site != "D" & cat != "cat_3") %>% 
+  filter(day >= table$start, day < table$end) %>% 
+  group_by(site, cat) %>% 
+  summarise(total_val = sum(val), .groups = "drop")
+
